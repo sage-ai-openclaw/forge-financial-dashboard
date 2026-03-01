@@ -1,4 +1,4 @@
-import type { Transaction, TransactionWithCategory, CreateTransactionInput, Category, TransactionFilters, MonthlySummary } from '../types';
+import type { Transaction, TransactionWithCategory, CreateTransactionInput, Category, TransactionFilters, MonthlySummary, Budget, BudgetWithSpending, BudgetSummary } from '../types';
 
 const API_BASE = '/api';
 
@@ -66,6 +66,40 @@ export const categoriesApi = {
 
   delete: (id: number) =>
     fetchJson<void>(`/categories/${id}`, {
+      method: 'DELETE',
+    }),
+};
+
+export const budgetsApi = {
+  getAll: (month?: string, year?: number) => {
+    const params = new URLSearchParams();
+    if (month) params.append('month', month);
+    if (year !== undefined) params.append('year', year.toString());
+    
+    const query = params.toString();
+    return fetchJson<Budget[]>(`/budgets${query ? `?${query}` : ''}`);
+  },
+
+  getWithSpending: (month: string, year: number) =>
+    fetchJson<BudgetWithSpending[]>(`/budgets/with-spending?month=${month}&year=${year}`),
+
+  getSummary: (month: string, year: number) =>
+    fetchJson<BudgetSummary>(`/budgets/summary/monthly?month=${month}&year=${year}`),
+
+  create: (data: { categoryId: number; amount: number; month: string; year: number }) =>
+    fetchJson<Budget>('/budgets', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  update: (id: number, amount: number) =>
+    fetchJson<Budget>(`/budgets/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ amount }),
+    }),
+
+  delete: (id: number) =>
+    fetchJson<void>(`/budgets/${id}`, {
       method: 'DELETE',
     }),
 };

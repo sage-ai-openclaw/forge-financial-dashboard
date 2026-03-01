@@ -22,6 +22,31 @@ export interface TransactionWithCategory extends Transaction {
   categoryColor?: string;
 }
 
+export interface Budget {
+  id: number;
+  categoryId: number;
+  amount: number;
+  month: string;
+  year: number;
+  createdAt: string;
+}
+
+export interface BudgetWithSpending extends Budget {
+  categoryName: string;
+  categoryColor: string;
+  spent: number;
+  remaining: number;
+  percentageUsed: number;
+}
+
+export interface BudgetSummary {
+  totalBudgeted: number;
+  totalSpent: number;
+  totalRemaining: number;
+  categoryCount: number;
+  overBudgetCount: number;
+}
+
 export interface CreateTransactionInput {
   amount: number;
   description: string;

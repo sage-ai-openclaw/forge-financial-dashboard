@@ -1,16 +1,16 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import app from '../src/index';
 
 describe('Budgets API (US4)', () => {
   let categoryId: number;
 
-  beforeAll(async () => {
-    // Create a test category for budgets
+  beforeEach(async () => {
+    // Create a fresh test category for each test
     const response = await request(app)
       .post('/api/categories')
       .send({
-        name: 'Budget Test Category',
+        name: `Budget Test Category ${Date.now()}`,
         type: 'expense',
         color: '#ff0000',
       });
@@ -172,6 +172,16 @@ describe('Budgets API (US4)', () => {
 
   describe('GET /api/budgets/summary/monthly', () => {
     it('should return monthly budget summary', async () => {
+      // Create a budget first
+      await request(app)
+        .post('/api/budgets')
+        .send({
+          categoryId,
+          amount: 500,
+          month: '3',
+          year: 2026,
+        });
+
       const response = await request(app)
         .get('/api/budgets/summary/monthly?month=3&year=2026');
 
