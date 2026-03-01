@@ -92,6 +92,8 @@ async function createTables(): Promise<void> {
   await database.exec(`CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date)`);
   await database.exec(`CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category_id)`);
   await database.exec(`CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type)`);
+  await database.exec(`CREATE INDEX IF NOT EXISTS idx_budgets_category ON budgets(category_id)`);
+  await database.exec(`CREATE INDEX IF NOT EXISTS idx_budgets_month_year ON budgets(month, year)`);
 
   // Insert default categories
   const defaultCategories = [

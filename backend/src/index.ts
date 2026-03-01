@@ -3,6 +3,7 @@ import cors from 'cors';
 import { initializeDatabase } from './database';
 import transactionsRouter from './routes/transactions';
 import categoriesRouter from './routes/categories';
+import budgetsRouter from './routes/budgets';
 
 const app = express();
 
@@ -13,6 +14,7 @@ app.use(express.json());
 // Routes
 app.use('/api/transactions', transactionsRouter);
 app.use('/api/categories', categoriesRouter);
+app.use('/api/budgets', budgetsRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

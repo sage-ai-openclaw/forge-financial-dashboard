@@ -1,10 +1,10 @@
-import React from 'react';
+import { FC } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { TransactionsPage } from './pages/TransactionsPage';
 import { CategoriesPage } from './pages/CategoriesPage';
 import './App.css';
 
-function App() {
+const App: FC = () => {
   return (
     <Router>
       <div className="app">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { transactionsApi, categoriesApi } from '../utils/api';
 import type { TransactionWithCategory, Category, CreateTransactionInput } from '../types';
 import './TransactionsPage.css';
@@ -15,6 +15,16 @@ export function TransactionsPage() {
   const [filterCategory, setFilterCategory] = useState<string>('');
   const [filterStartDate, setFilterStartDate] = useState<string>('');
   const [filterEndDate, setFilterEndDate] = useState<string>('');
+
+  // Sorting
+  type SortField = 'date' | 'amount' | 'description' | 'type' | 'categoryName';
+  type SortDirection = 'asc' | 'desc';
+  const [sortField, setSortField] = useState<SortField>('date');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Form state
   const [formData, setFormData] = useState<CreateTransactionInput>({
@@ -49,6 +59,64 @@ export function TransactionsPage() {
     }
   }
 
+  // Sorting and pagination logic
+  const sortedTransactions = useMemo(() => {
+    const sorted = [...transactions];
+    sorted.sort((a, b) => {
+      let aValue: any = a[sortField];
+      let bValue: any = b[sortField];
+
+      // Handle null/undefined values for categoryName
+      if (sortField === 'categoryName') {
+        aValue = a.categoryName || '';
+        bValue = b.categoryName || '';
+      }
+
+      // Date comparison
+      if (sortField === 'date') {
+        const comparison = new Date(aValue).getTime() - new Date(bValue).getTime();
+        return sortDirection === 'asc' ? comparison : -comparison;
+      }
+
+      // String comparison
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        const comparison = aValue.localeCompare(bValue);
+        return sortDirection === 'asc' ? comparison : -comparison;
+      }
+
+      // Number comparison
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        const comparison = aValue - bValue;
+        return sortDirection === 'asc' ? comparison : -comparison;
+      }
+
+      return 0;
+    });
+    return sorted;
+  }, [transactions, sortField, sortDirection]);
+
+  // Pagination
+  const totalPages = Math.ceil(sortedTransactions.length / itemsPerPage);
+  const paginatedTransactions = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return sortedTransactions.slice(startIndex, startIndex + itemsPerPage);
+  }, [sortedTransactions, currentPage]);
+
+  function handleSort(field: SortField) {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+    setCurrentPage(1); // Reset to first page on sort change
+  }
+
+  function getSortIndicator(field: SortField) {
+    if (sortField !== field) return '⇅';
+    return sortDirection === 'asc' ? '↑' : '↓';
+  }
+
   async function applyFilters() {
     try {
       const filters: Parameters<typeof transactionsApi.getAll>[0] = {};
@@ -69,6 +137,9 @@ export function TransactionsPage() {
     setFilterCategory('');
     setFilterStartDate('');
     setFilterEndDate('');
+    setSortField('date');
+    setSortDirection('desc');
+    setCurrentPage(1);
     loadData();
   }
 
@@ -260,47 +331,141 @@ export function TransactionsPage() {
         </div>
       </div>
 
-      <div className="transactions-list">
+      <div className="transactions-table-container card">
+        <div className="transactions-header">
+          <h3>
+            Transactions ({sortedTransactions.length})
+          </h3>
+          {sortedTransactions.length > 0 && (
+            <span className="pagination-info">
+              Showing {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, sortedTransactions.length)} of {sortedTransactions.length}
+            </span>
+          )}
+        </div>
+
         {transactions.length === 0 ? (
-          <div className="empty-state card">
+          <div className="empty-state">
             <p>No transactions found</p>
           </div>
+        ) : sortedTransactions.length === 0 ? (
+          <div className="empty-state">
+            <p>No transactions match the current filters</p>
+          </div>
         ) : (
-          transactions.map(t => (
-            <div key={t.id} className="transaction-item card">
-              <div className="transaction-main">
-                <div className={`transaction-type ${t.type}`}>
-                  {t.type === 'income' ? '↑' : '↓'}
-                </div>
-                <div className="transaction-info">
-                  <div className="transaction-description">{t.description}</div>
-                  <div className="transaction-meta">
-                    {formatDate(t.date)}
-                    {t.categoryName && (
-                      <span 
-                        className="category-badge"
-                        style={{ backgroundColor: t.categoryColor || '#6366f1' }}
-                      >
-                        {t.categoryName}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className={`transaction-amount ${t.type}`}>
-                {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
-              </div>
-
-              <button 
-                className="delete-btn"
-                onClick={() => handleDelete(t.id)}
-                title="Delete"
-              >
-                🗑️
-              </button>
+          <>
+            <div className="transactions-table-wrapper">
+              <table className="transactions-table">
+                <thead>
+                  <tr>
+                    <th 
+                      className="sortable" 
+                      onClick={() => handleSort('type')}
+                    >
+                      Type {getSortIndicator('type')}
+                    </th>
+                    <th 
+                      className="sortable" 
+                      onClick={() => handleSort('date')}
+                    >
+                      Date {getSortIndicator('date')}
+                    </th>
+                    <th 
+                      className="sortable" 
+                      onClick={() => handleSort('description')}
+                    >
+                      Description {getSortIndicator('description')}
+                    </th>
+                    <th 
+                      className="sortable" 
+                      onClick={() => handleSort('categoryName')}
+                    >
+                      Category {getSortIndicator('categoryName')}
+                    </th>
+                    <th 
+                      className="sortable amount-col" 
+                      onClick={() => handleSort('amount')}
+                    >
+                      Amount {getSortIndicator('amount')}
+                    </th>
+                    <th className="actions-col">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedTransactions.map(t => (
+                    <tr key={t.id}>
+                      <td>
+                        <span className={`type-badge ${t.type}`}>
+                          {t.type === 'income' ? '↑' : '↓'} {t.type}
+                        </span>
+                      </td>
+                      <td>{formatDate(t.date)}</td>
+                      <td className="description-cell">{t.description}</td>
+                      <td>
+                        {t.categoryName ? (
+                          <span 
+                            className="category-badge-table"
+                            style={{ 
+                              backgroundColor: t.categoryColor || '#6366f1',
+                              color: '#fff'
+                            }}
+                          >
+                            {t.categoryName}
+                          </span>
+                        ) : (
+                          <span className="no-category">—</span>
+                        )}
+                      </td>
+                      <td className={`amount-cell ${t.type}`}>
+                        {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
+                      </td>
+                      <td>
+                        <button 
+                          className="delete-btn-small"
+                          onClick={() => handleDelete(t.id)}
+                          title="Delete"
+                        >
+                          🗑️
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ))
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="pagination">
+                <button
+                  className="btn btn-small"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  ← Prev
+                </button>
+                
+                <div className="page-numbers">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                    <button
+                      key={page}
+                      className={`page-btn ${page === currentPage ? 'active' : ''}`}
+                      onClick={() => setCurrentPage(page)}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  className="btn btn-small"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
