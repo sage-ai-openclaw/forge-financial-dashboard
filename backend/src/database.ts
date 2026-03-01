@@ -88,12 +88,65 @@ async function createTables(): Promise<void> {
     )
   `);
 
+  // API Keys table
+  await database.exec(`
+    CREATE TABLE IF NOT EXISTS api_keys (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      key TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      permissions TEXT NOT NULL DEFAULT 'read,write',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      last_used_at DATETIME,
+      is_active INTEGER NOT NULL DEFAULT 1
+    )
+  `);
+
+  // Webhooks table
+  await database.exec(`
+    CREATE TABLE IF NOT EXISTS webhooks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      url TEXT NOT NULL,
+      events TEXT NOT NULL,
+      secret TEXT NOT NULL,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Webhook deliveries table for tracking
+  await database.exec(`
+    CREATE TABLE IF NOT EXISTS webhook_deliveries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      webhook_id INTEGER NOT NULL,
+      event TEXT NOT NULL,
+      payload TEXT NOT NULL,
+      response_status INTEGER,
+      response_body TEXT,
+      delivered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      success INTEGER NOT NULL DEFAULT 0,
+      FOREIGN KEY (webhook_id) REFERENCES webhooks(id) ON DELETE CASCADE
+    )
+  `);
+
   // Indexes
   await database.exec(`CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date)`);
   await database.exec(`CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category_id)`);
   await database.exec(`CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type)`);
   await database.exec(`CREATE INDEX IF NOT EXISTS idx_budgets_category ON budgets(category_id)`);
   await database.exec(`CREATE INDEX IF NOT EXISTS idx_budgets_month_year ON budgets(month, year)`);
+  await database.exec(`CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(key)`);
+  await database.exec(`CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_webhook ON webhook_deliveries(webhook_id)`);
+
+  // Insert default API key for development
+  const defaultApiKey = 'fd_dev_' + Array.from({ length: 32 }, () => 
+    'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)]
+  ).join('');
+  
+  await database.run(
+    `INSERT OR IGNORE INTO api_keys (key, name, permissions) VALUES (?, ?, ?)`,
+    defaultApiKey, 'Default Development Key', 'read,write,webhooks'
+  );
+  console.log('🔑 Default API Key:', defaultApiKey);
 
   // Insert default categories
   const defaultCategories = [
