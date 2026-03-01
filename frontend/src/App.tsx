@@ -2,6 +2,7 @@ import { FC } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { TransactionsPage } from './pages/TransactionsPage';
 import { CategoriesPage } from './pages/CategoriesPage';
+import { BudgetsPage } from './pages/BudgetsPage';
 import './App.css';
 
 const App: FC = () => {
@@ -16,6 +17,7 @@ const App: FC = () => {
           <ul className="nav-links">
             <li><Link to="/">Transactions</Link></li>
             <li><Link to="/categories">Categories</Link></li>
+            <li><Link to="/budgets">Budgets</Link></li>
           </ul>
         </nav>
 
@@ -23,6 +25,7 @@ const App: FC = () => {
           <Routes>
             <Route path="/" element={<TransactionsPage />} />
             <Route path="/categories" element={<CategoriesPage />} />
+            <Route path="/budgets" element={<BudgetsPage />} />
           </Routes>
         </main>
       </div>
