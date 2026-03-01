@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { TransactionsPage } from './pages/TransactionsPage';
+import { CategoriesPage } from './pages/CategoriesPage';
 import './App.css';
 
 function App() {
@@ -14,12 +15,14 @@ function App() {
           </div>
           <ul className="nav-links">
             <li><Link to="/">Transactions</Link></li>
+            <li><Link to="/categories">Categories</Link></li>
           </ul>
         </nav>
 
         <main className="main-content">
           <Routes>
             <Route path="/" element={<TransactionsPage />} />
+            <Route path="/categories" element={<CategoriesPage />} />
           </Routes>
         </main>
       </div>
